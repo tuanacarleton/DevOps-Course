@@ -1,0 +1,23 @@
+---
+
+- hosts: webservers
+  become: true
+  vars:
+   pkg_name: apache2
+  vars_prompt:
+  - name: dest_path
+    prompt: Destination Path
+    private: false
+  tasks:
+  - name: update apt repo of the host
+    command: apt update -y
+  - name: install {{pkg_name}} package
+    apt: name={{pkg_name}} state=present
+  - name: start {{pkg_name}} service
+    service: name={{pkg_name}} state=started
+  - name: copy index.html
+    copy: src=index.html dest={{dest_path}}
+    notify: restart service 
+  handlers:
+  - name: restart service
+    service: name={{pkg_name}} state=restarted

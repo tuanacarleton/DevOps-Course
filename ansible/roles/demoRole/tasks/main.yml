@@ -1,0 +1,9 @@
+---
+# tasks file for demoRole
+- name: copy file
+  template: 
+    src: templates/template1.j2
+    dest: /etc/demoRole
+    owner: root
+    group: root
+    mode: 0444
