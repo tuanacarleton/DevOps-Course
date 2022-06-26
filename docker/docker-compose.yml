@@ -1,0 +1,13 @@
+version: '2'
+
+services:
+  compose-unix:
+    image: centos:7
+    command: sleep infinity
+    links:
+      - compose-db
+
+  compose-db:
+    image: redis
+    expose:
+      - '6379'

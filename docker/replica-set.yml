@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+ name: replica-set
+spec:
+ replicas: 3
+ selector:
+  matchLabels:
+   type: webserver
+ template:
+  metadata:
+   labels:
+    author: ctuana
+    type: webserver
+  spec:
+   containers:
+   - name: nginx
+     image: nginx
+     ports:
+     - containerPort: 80
+   - name: alpine
+     image: alpine
+     command: ['watch','wget','-qO-','localhost']
