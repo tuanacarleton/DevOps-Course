@@ -2,23 +2,25 @@ provider "aws" {
   region  = "us-east-1"
 }
 
-# Security Group
-variable "ingressrules" {
-  type    = list(number)
-  default = [8080, 22]
-}
+
 resource "aws_security_group" "web_traffic" {
   name        = "Allow web traffic"
   description = "inbound ports for ssh and standard http and everything outbound"
-  dynamic "ingress" {iterator = port
-    for_each = var.ingressrules
-    content {
-      from_port   = port.value
-      to_port     = port.value
-      protocol    = "TCP"
-      cidr_blocks = ["0.0.0.0/0"]
-    }
+
+  ingress {
+    from_port        = 8080
+    to_port          = 8080
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
   }
+
+  ingress {
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -66,7 +68,7 @@ resource "aws_instance" "jenkins" {
     type         = "ssh"
     host         = self.public_ip
     user         = "ec2-user"
-    private_key  = file(".\aws_lab_key.pem" )
+    private_key  = "aws_lab_key.pem" 
    }
   tags  = {
     "Name"      = "Jenkins"
