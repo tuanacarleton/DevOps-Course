@@ -1,5 +1,5 @@
 provider "aws" {
-  default     = "us-east-1"
+  region     = "us-east-1"
 }
 
 resource "aws_security_group" "jenkins_sg" {
@@ -59,7 +59,7 @@ data "aws_ami" "amazon_linux" {
 resource "aws_instance" "web" {
   ami             = data.aws_ami.amazon_linux.id
   instance_type   = "t2.micro"
-  key_name        = "aws_lab_key.pem"
+  key_name        = "aws_lab_key"
   security_groups = [aws_security_group.jenkins_sg.name]
   user_data       = "${file("install_jenkins.sh")}"
   tags = {
