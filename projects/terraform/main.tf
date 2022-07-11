@@ -1,13 +1,13 @@
 provider "aws" {
-  region  = "us-east-1"
+  default     = "us-east-1"
 }
 
-
-resource "aws_security_group" "web_traffic" {
-  name        = "Allow web traffic"
-  description = "inbound ports for ssh and standard http and everything outbound"
+resource "aws_security_group" "jenkins_sg" {
+  name        = "jenkins_sg"
+  description = "Allow Jenkins Traffic"
 
   ingress {
+    description      = "Allow from Personal CIDR block"
     from_port        = 8080
     to_port          = 8080
     protocol         = "tcp"
@@ -15,6 +15,7 @@ resource "aws_security_group" "web_traffic" {
   }
 
   ingress {
+    description      = "Allow SSH from Personal CIDR block"
     from_port        = 22
     to_port          = 22
     protocol         = "tcp"
@@ -22,55 +23,46 @@ resource "aws_security_group" "web_traffic" {
   }
 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
   }
+
   tags = {
-    "Terraform" = "true"
+    Name = "Jenkins SG"
   }
 }
 
-# Data Block
-data "aws_ami" "redhat" {
+data "aws_ami" "amazon_linux" {
   most_recent = true
+
   filter {
     name   = "name"
-    values = ["RHEL-7.5_HVM_GA*"]
+    values = ["amzn2-ami-hvm-2.0*"]
   }
+
   filter {
     name   = "virtualization-type"
     values = ["hvm"]
   }
-  owners = ["309956199498"]
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+
+  owners = ["amazon"] # Canonical
 }
 
-# resource block
-resource "aws_instance" "jenkins" {
-  ami             = data.aws_ami.redhat.id
+resource "aws_instance" "web" {
+  ami             = data.aws_ami.amazon_linux.id
   instance_type   = "t2.micro"
-  security_groups = [aws_security_group.web_traffic.name]
-  key_name        = "aws_lab_key"
-  
-  provisioner "remote-exec"  {
-    inline  = [
-      "sudo yum install -y jenkins java-11-openjdk-devel",
-      "sudo yum -y install wget",
-      "sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo",
-      "sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key",
-      "sudo yum upgrade -y",
-      "sudo yum install jenkins -y",
-      "sudo systemctl start jenkins",
-      ]
-   }
- connection {
-    type         = "ssh"
-    host         = self.public_ip
-    user         = "ec2-user"
-    private_key  = "aws_lab_key.pem" 
-   }
-  tags  = {
-    "Name"      = "Jenkins"
-      }
- }
+  key_name        = "aws_lab_key.pem"
+  security_groups = [aws_security_group.jenkins_sg.name]
+  user_data       = "${file("install_jenkins.sh")}"
+  tags = {
+    Name = "Jenkins"
+  }
+}
